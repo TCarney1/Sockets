@@ -14,8 +14,17 @@ int main() {
     int num_strings = 10;
     char **args = NULL;
     args = malloc(num_strings * (sizeof(char *)));
-    for (int i=0; i<num_strings; i++)
+    if(args == NULL){
+        printf("ERROR: Failed to allocate memory.\n");
+        exit(1);
+    }
+    for (int i=0; i<num_strings; i++) {
         args[i] = malloc(sizeof(char) * BUFF_SIZE);
+        if(args[i] == NULL){
+            printf("ERROR: Failed to allocate memory.\n");
+            exit(1);
+        }
+    }
 
     if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0){
         perror("ERROR: Failed to create socket");
@@ -93,7 +102,7 @@ int main() {
             if(stat(args[0], &st) == -1){
 
                 printf("--- Directory Created ---\n");
-                write(client_socket, "0", sizeof(err_message));
+                write(client_socket, "0", sizeof(char));
                 // make directory because it doesnt exist.
                 mkdir(args[0], 0777);
 
@@ -102,21 +111,20 @@ int main() {
 
                 if(fp == NULL){
                     printf("ERROR: Failed to open file.\n");
-                    exit(1)
+                    exit(1);
                 }
                 printf("--- File opened ---\n");
 
                 while(strcmp(client_request, "-1-1") != 0){
-                    memset(client_request, '\0', strlen(client_request));
-                    read(client_socket, client_request, BUFF_SIZE);
-                    fputs(client_request, BUFF_SIZE, fp);
+                    read(client_socket, client_request, sizeof(char) * 4);
+                    fputc(client_request[0], fp);
 
                 }
                 fclose(fp);
 
             } else {
                 printf("ERROR: Directory already exists. Use -f flag to replace directory.\n");
-                write(client_socket, "1", sizeof(err_message));
+                write(client_socket, "1", sizeof(char));
 
             }
         }
