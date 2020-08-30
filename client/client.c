@@ -55,6 +55,13 @@ int main(int argc, char *argv[]){
         // clearing buffers
         memset(user_input, '\0', strlen(user_input));
         memset(server_reply, '\0', strlen(server_reply));
+        memset(args, '\0', (num_strings*BUFF_SIZE) * (sizeof *args));
+
+        if(user_input == NULL || server_reply == NULL || args == NULL){
+            printf("ERROR: Could not allocate memory.\n");
+            exit(1);
+        }
+
 
         // prompting user for input
         printf("> ");
@@ -68,7 +75,7 @@ int main(int argc, char *argv[]){
         token = strtok(user_input_split, " ,\n");
 
         if(strcmp(user_input_split, "quit") == 0) {
-            write(server_socket, user_input, sizeof(user_input));
+            write(server_socket, user_input_split, sizeof(user_input));
             close(server_socket);
             free(user_input);
             free(server_reply);
@@ -82,8 +89,9 @@ int main(int argc, char *argv[]){
 
         int arg_count = 0;
         while(token != NULL){
-            token = strtok(NULL, " ,");
+            token = strtok(NULL, " ,\n");
             args[arg_count] = token;
+            args[arg_count] += '\0';
             arg_count++;
         }
 
@@ -96,24 +104,28 @@ int main(int argc, char *argv[]){
             printf("Sent: %s\n", user_input);
 
 
+
             // server replies 0 if directory created, 1 if directory already exists.
             read(server_socket, server_reply, sizeof(server_reply));
             if(strcmp(server_reply, "0") == 0){
                 FILE *fp = NULL;
-                fp = fopen("test.txt", "r");
-                if(fp == NULL){
+                fp = fopen(args[1], "r");
+                if (fp == NULL) {
                     printf("ERROR: Failed to open file\n");
                     exit(1);
                 }
-                char c[2] = "\0";
-                while((c[0] = fgetc(fp)) != EOF){
-                    c[0] = fgetc(fp);
-                    write(server_socket, c, sizeof(c));
+                char *end = "-1-1";
+                char line[256];
+                while(fgets(line, sizeof(line), fp) != NULL){
+                    write(server_socket, line, sizeof(line));
                 }
-                write(server_socket, "-1-1", sizeof(char) * 5);
+                write(server_socket, end, sizeof(end));
+                fclose(fp);
 
             }
-            printf("%s", server_reply);
+            else {
+                printf("ERROR: Directory already exists.\n");
+            }
             // stop timing
             clock_t end = clock();
             double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;

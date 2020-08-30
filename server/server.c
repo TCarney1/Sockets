@@ -60,10 +60,10 @@ int main() {
         // clearing buffers
         memset(client_request, '\0', strlen(client_request));
         memset(server_reply, '\0', strlen(server_reply));
-        //memset(args, '\0', num_strings * (sizeof *args));
+        memset(args, '\0', (num_strings*BUFF_SIZE) * (sizeof *args));
 
-        if(client_request == NULL || server_reply == NULL){
-            printf("ERROR: Could allocate memory.\n");
+        if(client_request == NULL || server_reply == NULL || args == NULL){
+            printf("ERROR: Could not allocate memory.\n");
             exit(1);
         }
 
@@ -106,7 +106,9 @@ int main() {
                 // make directory because it doesnt exist.
                 mkdir(args[0], 0777);
 
+                // file handling
                 FILE *fp = NULL;
+                args[1][strlen(args[1]) - 1] = '\0'; //getting ride of the '\n' for the file name
                 fp = fopen(args[1], "w");
 
                 if(fp == NULL){
@@ -115,9 +117,14 @@ int main() {
                 }
                 printf("--- File opened ---\n");
 
-                while(strcmp(client_request, "-1-1") != 0){
-                    read(client_socket, client_request, sizeof(char) * 4);
-                    fputc(client_request[0], fp);
+                // file copying
+                char line[256];
+                while(1){
+                    read(client_socket, client_request, sizeof(line));
+                    if(strcmp(client_request, "-1-1") == 0){
+                        break;
+                    }
+                    fputs(client_request, fp);
 
                 }
                 fclose(fp);
@@ -128,6 +135,5 @@ int main() {
 
             }
         }
-        //write(client_socket, cur_time, sizeof(cur_time));
     }
 }
