@@ -1,6 +1,5 @@
 #include "client_header.h"
 
-
 int main(int argc, char *argv[]){
     ////////
     //TODO make ip address be entered from arguments.
@@ -169,8 +168,25 @@ int main(int argc, char *argv[]){
                 printf("ERROR: Directory does not exists.\n");
             }
         }
+        else if(strcmp(user_input_split, "sys") == 0){
+            if(TYPE == 0){
+                printf("--- System: Windows ---\n");
+            } else if (TYPE == 1){
+                printf("--- System: Mac ---\n");
+            } else if (TYPE == 2){
+                printf("--- System: Unix ---\n");
+            } else {
+                printf("--- System: Unknown ---\n");
+            }
+
+            char cpu_info[100];
+            size_t size = 100;
+            sysctlbyname("machdep.cpu.brand_string", &cpu_info, &size, NULL, 0);
+
+            printf("--- CPU: %s ---\n", cpu_info);
+        }
         else{
-            printf("ERROR: %s is not defined.\n", token);
+            printf("ERROR: %s is not defined.\n", user_input_split);
         }
     }
 }
