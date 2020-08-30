@@ -21,6 +21,8 @@
 #include <time.h>
 
 
+int print_forty(int server_socket, char *server_reply);
+
 
 
 

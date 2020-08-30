@@ -74,6 +74,7 @@ int main(int argc, char *argv[]){
         char *token;
         token = strtok(user_input_split, " ,\n");
 
+        // quits the client and server when "quit" is entered
         if(strcmp(user_input_split, "quit") == 0) {
             write(server_socket, user_input_split, sizeof(user_input));
             close(server_socket);
@@ -95,18 +96,17 @@ int main(int argc, char *argv[]){
             arg_count++;
         }
 
+        // puts file on server. file [dir] [file]
         if(strcmp(user_input_split, "put") == 0){
             //start timing
             clock_t begin = clock();
 
-            // request from server
+            // put request from server
             write(server_socket, user_input, BUFF_SIZE);
             printf("Sent: %s\n", user_input);
-
-
-
             // server replies 0 if directory created, 1 if directory already exists.
             read(server_socket, server_reply, sizeof(server_reply));
+
             if(strcmp(server_reply, "0") == 0){
                 FILE *fp = NULL;
                 fp = fopen(args[1], "r");
@@ -131,11 +131,57 @@ int main(int argc, char *argv[]){
             double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
 
             // display result and time taken
-            // printf("Reply: %s\n", server_reply);
             printf("Time Taken: %lf seconds\n", time_spent);
+        }
+        // reads file from server get [dir] [file]
+        else if(strcmp(user_input_split, "get") == 0){
+            // get request from server
+            write(server_socket, user_input, BUFF_SIZE);
+            printf("Sent: %s\n", user_input);
+            // server replies 0 if directory exists, 1 if directory doesn't exists.
+            read(server_socket, server_reply, sizeof(server_reply));
+
+            if(strcmp(server_reply, "0") == 0){
+                //start timing
+                clock_t begin = clock();
+
+                // start reading from the server.
+                while(1){
+                    memset(server_reply, '\0', strlen(server_reply));
+                    if(print_forty(server_socket, server_reply) == 1){
+                        printf("--- End of file ---\n");
+                        break;
+                    }
+                    else {
+                        printf("--- Press any key to continue ---\n");
+                        getchar();
+                    }
+                }
+
+                clock_t end = clock();
+                double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+                // display result and time taken
+                printf("Time Taken: %lf seconds\n", time_spent);
+
+            } else {
+                printf("ERROR: Directory does not exists.\n");
+            }
         }
         else{
             printf("ERROR: %s is not defined.\n", token);
         }
     }
+}
+
+// prints 40 lines from server. Returns 1 if file ends. Returns 0 if not.
+int print_forty(int server_socket, char *server_reply){
+    for(int i = 0; i < 40; i++){
+        read(server_socket, server_reply, sizeof(server_reply));
+        if(strcmp(server_reply, "-1-1") == 0){
+            return 1;
+        }
+        fputs(server_reply, stdout);
+    }
+    return 0;
 }

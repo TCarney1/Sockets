@@ -95,6 +95,7 @@ int main() {
             arg_count++;
         }
 
+        // puts client's file on server
         if(strcmp(client_request, "put") == 0) {
             printf("--- Put request ---\n");
 
@@ -106,21 +107,18 @@ int main() {
                 // make directory because it doesnt exist.
                 mkdir(args[0], 0777);
 
-                // file handling
+                // file handling and making of file path
                 FILE *fp = NULL;
                 args[1][strlen(args[1]) - 1] = '\0'; //getting ride of the '\n' for the file name
                 char path[BUFF_SIZE] = "/";
                 strcat(path, args[0]);
                 strcat(path, "/");
-                strcat(path, args[1]);
-                printf("Path: %s\n", path);
+                strcat(path, args[1]); // path is now "/[dir]/[file]"
 
 
-                //fp = fopen(args[1], "w");
                 char cwd[BUFF_SIZE];
                 if(getcwd(cwd, sizeof(cwd)) != NULL){
-                    strcat(cwd, path);
-                    printf("cwd: %s\n", cwd);
+                    strcat(cwd, path); // cwd is now "[current_directory]/[dir]/[file]"
                 } else {
                     printf("ERROR: Could not get current working directory.\n");
                     exit(1);
@@ -153,5 +151,30 @@ int main() {
 
             }
         }
+        if(strcmp(client_request, "get") == 0){
+            // check if directory exists.
+            if(stat(args[0], &st) >= 0){
+                // request from server
+                printf("--- Directory Found ---\n");
+                write(client_socket, "0", sizeof(char));
+
+
+                // starset sending to the client.
+                while(1){
+                    write(client_socket, server_reply, sizeof(server_reply));
+                    break; // this is not meant to be here
+                }
+
+
+            } else {
+                write(client_socket, "1", sizeof(char));
+                printf("ERROR: Directory does not exists.\n");
+            }
+        }
     }
+}
+
+
+char *make_file_path(char *arg1, char *arg2){
+
 }
