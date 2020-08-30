@@ -27,15 +27,15 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     }
 
-    int num_strings = 10;
+    int num_args = 10;
     char **args = NULL;
-    args = malloc(num_strings * (sizeof(char *)));
+    args = malloc(num_args * (sizeof(char *)));
     if(args == NULL){
         perror("Error allocating memory");
         exit(EXIT_FAILURE);
     }
 
-    for (int i=0; i<num_strings; i++){
+    for (int i=0; i<num_args; i++){
         args[i] = malloc(sizeof(char) * BUFF_SIZE);
         if(args[i] == NULL){
             perror("Error allocating memory");
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
         // clearing buffers
         memset(user_input, '\0', strlen(user_input));
         memset(server_reply, '\0', strlen(server_reply));
-        memset(args, '\0', (num_strings*BUFF_SIZE) * (sizeof *args));
+        memset(args, '\0', (num_args*BUFF_SIZE) * (sizeof *args));
 
         if(user_input == NULL || server_reply == NULL || args == NULL){
             perror("Error allocating memory");
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]){
         user_input_split = (char*)malloc(BUFF_SIZE * sizeof(char));
         strcpy(user_input_split, user_input);
         char *token;
-        token = strtok(user_input_split, " ,\n");
+        token = strtok(user_input_split, " \n");
 
         // quits the client and server when "quit" is entered
         if(strcmp(user_input_split, "quit") == 0) {
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
             close(server_socket);
             free(user_input);
             free(server_reply);
-            for(int i = 0; i < num_strings; i++){
+            for(int i = 0; i < num_args; i++){
                 free(args[i]);
             }
             free(args);
@@ -99,9 +99,8 @@ int main(int argc, char *argv[]){
 
         int arg_count = 0;
         while(token != NULL){
-            token = strtok(NULL, " ,\n");
+            token = strtok(NULL, " \n");
             args[arg_count] = token;
-            args[arg_count] += '\0';
             arg_count++;
         }
 
@@ -144,7 +143,7 @@ int main(int argc, char *argv[]){
         }
         // reads file from server get [dir] [file]
         else if(strcmp(user_input_split, "get") == 0){
-            // get request from server
+            // request get from server
             write(server_socket, user_input, BUFF_SIZE);
             printf("Sent: %s\n", user_input);
             // server replies 0 if directory exists, 1 if directory doesn't exists.
@@ -178,6 +177,7 @@ int main(int argc, char *argv[]){
                 perror("Error directory does not exist");
             }
         }
+        // prints the clients OS and CPU information
         else if(strcmp(user_input_split, "sys") == 0){
             if(TYPE == 0){
                 printf("--- System: Windows ---\n");
@@ -196,6 +196,34 @@ int main(int argc, char *argv[]){
                 exit(EXIT_FAILURE);
             }
             printf("--- CPU: %s ---\n", cpu_info);
+        }
+        // compiles and runs files on the server. run [dir][*optional* args][*optional*-f localfile]
+        else if(strcmp(user_input_split, "run") == 0){
+            int last_index = arg_count - 2;
+            bool loc_file, f_flag = false;
+
+            // check if last argument is a file name (for optional localfile arg)
+            loc_file = (strchr(args[last_index], '.')) != NULL;
+            if(loc_file == true){
+
+                if(last_index < 1){
+                    perror("Error performing 'run', too few arguments");
+                    exit(1);
+                }
+                // check for -f flag (-f flag wont exists if localfile doesnt.)
+                f_flag = strcmp(args[last_index - 1], "-f") == 0;
+            }
+
+            // check if localfile already exists.
+            if(access(args[last_index], F_OK) == -1 || f_flag == true) {
+                // if file doesn't exists OR we have -f flag
+                // request get from server
+                write(server_socket, user_input, BUFF_SIZE);
+                printf("Sent: %s\n", user_input);
+            } else {
+                // if file exists and we dont have -f flag.
+                printf("Error, directory already exists. No -f flag present.\n");
+            }
         }
         else{
             printf("Error: %s is not defined.\n", user_input_split);

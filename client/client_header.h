@@ -32,6 +32,7 @@
 #include <time.h>
 #include <sys/sysctl.h>
 #include <errno.h>
+#include <stdbool.h>
 
 
 int print_forty(int server_socket);

@@ -16,14 +16,14 @@ int main() {
     }
 
 
-    int num_strings = 10;
+    int num_args = 10;
     char **args = NULL;
-    args = malloc(num_strings * (sizeof(char *)));
+    args = malloc(num_args * (sizeof(char *)));
     if(args == NULL){
         perror("Error allocating memory");
         exit(EXIT_FAILURE);
     }
-    for (int i=0; i<num_strings; i++) {
+    for (int i=0; i<num_args; i++) {
         args[i] = malloc(sizeof(char) * BUFF_SIZE);
         if(args[i] == NULL){
             perror("Error allocating memory");
@@ -64,7 +64,7 @@ int main() {
         // clearing buffers
         memset(client_request, '\0', strlen(client_request));
         memset(server_reply, '\0', strlen(server_reply));
-        memset(args, '\0', (num_strings*BUFF_SIZE) * (sizeof *args));
+        memset(args, '\0', (num_args*BUFF_SIZE) * (sizeof *args));
 
         // get whole line of client request.
         read(client_socket, client_request, BUFF_SIZE);
@@ -72,7 +72,7 @@ int main() {
 
         // break client request into [arg1] [arg2] [arg3]...
         char *token;
-        token = strtok(client_request, " ,\n");
+        token = strtok(client_request, " \n");
 
         // check for quit request
         if(strcmp(client_request, "quit") == 0){
@@ -80,16 +80,17 @@ int main() {
             free(server_reply);
             close(client_socket);
             close(server_socket);
-            for(int i = 0; i < num_strings; i++){
+            for(int i = 0; i < num_args; i++){
                 free(args[i]);
             }
             free(args);
             return 0;
         }
+
         // still breaking input string into sections
         int arg_count = 0;
         while(token != NULL){
-            token = strtok(NULL, " ,");
+            token = strtok(NULL, " ");
             args[arg_count] = token;
             arg_count++;
         }
@@ -143,6 +144,7 @@ int main() {
 
             }
         }
+        // sends contents of file to client
         else if(strcmp(client_request, "get") == 0){
             // check if directory exists.
             if(stat(args[0], &st) >= 0){
@@ -179,6 +181,22 @@ int main() {
             } else {
                 write(client_socket, "1", sizeof(char));
                 perror("Error opening directory");
+            }
+        }
+        // puts client's file on server
+        else if(strcmp(client_request, "run") == 0) {
+            int last_index = arg_count - 2;
+            printf("--- Run request ---\n");
+            //removing excess '\n' from single argument cases.
+            if(last_index < 1){
+                args[0][strlen(args[0]) - 1] = '\0';
+            }
+
+            // check if directory exists.
+            if(stat(args[0], &st) >= 0){
+                //exists
+            } else {
+                perror("Error opening program file");
             }
         }
         else{
