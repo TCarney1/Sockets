@@ -21,7 +21,7 @@
 #include <unistd.h>
 
 
-char *make_file_path(char *arg1, char *arg2);
+void make_file_path(char *file_name, char *arg0, char *arg1);
 
 
 

@@ -109,23 +109,15 @@ int main() {
 
                 // file handling and making of file path
                 FILE *fp = NULL;
-                args[1][strlen(args[1]) - 1] = '\0'; //getting ride of the '\n' for the file name
-                char path[BUFF_SIZE] = "/";
-                strcat(path, args[0]);
-                strcat(path, "/");
-                strcat(path, args[1]); // path is now "/[dir]/[file]"
-
-
-                char cwd[BUFF_SIZE];
-                if(getcwd(cwd, sizeof(cwd)) != NULL){
-                    strcat(cwd, path); // cwd is now "[current_directory]/[dir]/[file]"
-                } else {
-                    printf("ERROR: Could not get current working directory.\n");
+                char *file_name = malloc(BUFF_SIZE * sizeof(char));
+                if(file_name == NULL){
+                    printf("ERROR: Failed to allocated memory\n");
                     exit(1);
                 }
-                fp = fopen(cwd, "w");
 
-                ///Users/tomcarney/CLionProjects/Sockets/server
+                // makes 'file_name' = [current directory]/[dir]/[file]
+                make_file_path(file_name, args[0], args[1]);
+                fp = fopen(file_name, "w");
                 if(fp == NULL){
                     printf("ERROR: Failed to open file.\n");
                     exit(1);
@@ -133,9 +125,8 @@ int main() {
                 printf("--- File opened ---\n");
 
                 // file copying
-                char line[256];
                 while(1){
-                    read(client_socket, client_request, sizeof(line));
+                    read(client_socket, client_request, sizeof(char) * 256);
                     if(strcmp(client_request, "-1-1") == 0){
                         break;
                     }
@@ -143,6 +134,8 @@ int main() {
 
                 }
                 printf("--- copy complete ---\n");
+
+                free(file_name);
                 fclose(fp);
 
             } else {
@@ -151,30 +144,60 @@ int main() {
 
             }
         }
-        if(strcmp(client_request, "get") == 0){
+        else if(strcmp(client_request, "get") == 0){
             // check if directory exists.
             if(stat(args[0], &st) >= 0){
-                // request from server
                 printf("--- Directory Found ---\n");
-                write(client_socket, "0", sizeof(char));
+                write(client_socket, "0", sizeof(char)); // tell the client we found dir
+                char *file_name = malloc(BUFF_SIZE * sizeof(char));
+                if(file_name == NULL){
+                    printf("ERROR: Failed to allocate memory.\n");
+                    exit(1);
+                }
+                make_file_path(file_name, args[0], args[1]); //format file name correctly
 
-
-                // starset sending to the client.
-                while(1){
-                    write(client_socket, server_reply, sizeof(server_reply));
-                    break; // this is not meant to be here
+                // file stuff
+                FILE *fp = NULL;
+                fp = fopen(file_name, "r");
+                if(fp == NULL){
+                    printf("ERROR: Failed to open file.\n");
+                    return 0;
                 }
 
-
+                char *end = "-1-1";
+                char line[256];
+                while(fgets(line, sizeof(line), fp) != NULL){
+                    write(client_socket, line, sizeof(line));
+                }
+                write(client_socket, end, sizeof(end));
+                fclose(fp);
+                free(file_name);
             } else {
                 write(client_socket, "1", sizeof(char));
                 printf("ERROR: Directory does not exists.\n");
             }
         }
+        else{
+            printf("ERROR: Server does not recognize client command.\n");
+            exit(1);
+        }
     }
 }
 
 
-char *make_file_path(char *arg1, char *arg2){
+void make_file_path(char *file_name, char *arg0, char *arg1){
+    printf("1: %s\n2: %s\n", arg0, arg1);
+    //arg0[strlen(arg0) - 1] = '\0'; //getting ride of the '\n' for the file name
+    char path[BUFF_SIZE] = "/";
+    strcat(path, arg0);
+    strcat(path, "/");
+    strcat(path, arg1); // path is now "/[dir]/[file]"
 
+    if(getcwd(file_name, BUFF_SIZE) != NULL){
+        strcat(file_name, path); // cwd is now "[current_directory]/[dir]/[file]"
+    } else {
+        printf("ERROR: Could not get current working directory.\n");
+        exit(1);
+    }
+    file_name[strlen(file_name) - 1] = '\0';
 }
