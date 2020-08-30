@@ -109,8 +109,25 @@ int main() {
                 // file handling
                 FILE *fp = NULL;
                 args[1][strlen(args[1]) - 1] = '\0'; //getting ride of the '\n' for the file name
-                fp = fopen(args[1], "w");
+                char path[BUFF_SIZE] = "/";
+                strcat(path, args[0]);
+                strcat(path, "/");
+                strcat(path, args[1]);
+                printf("Path: %s\n", path);
 
+
+                //fp = fopen(args[1], "w");
+                char cwd[BUFF_SIZE];
+                if(getcwd(cwd, sizeof(cwd)) != NULL){
+                    strcat(cwd, path);
+                    printf("cwd: %s\n", cwd);
+                } else {
+                    printf("ERROR: Could not get current working directory.\n");
+                    exit(1);
+                }
+                fp = fopen(cwd, "w");
+
+                ///Users/tomcarney/CLionProjects/Sockets/server
                 if(fp == NULL){
                     printf("ERROR: Failed to open file.\n");
                     exit(1);
@@ -127,6 +144,7 @@ int main() {
                     fputs(client_request, fp);
 
                 }
+                printf("--- copy complete ---\n");
                 fclose(fp);
 
             } else {

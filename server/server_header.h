@@ -8,7 +8,7 @@
 
 
 #define PORT_NUM 80
-#define BUFF_SIZE 50
+#define BUFF_SIZE 100
 
 #include <stdio.h>
 #include <stdlib.h>
