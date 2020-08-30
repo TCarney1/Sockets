@@ -22,6 +22,7 @@
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1);
+int give_forty(int client_socket, FILE* fp);
 
 
 

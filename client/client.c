@@ -148,13 +148,14 @@ int main(int argc, char *argv[]){
                 // start reading from the server.
                 while(1){
                     memset(server_reply, '\0', strlen(server_reply));
-                    if(print_forty(server_socket, server_reply) == 1){
-                        printf("--- End of file ---\n");
+                    if(print_forty(server_socket) == 1){
+                        printf("\n--- End of file ---\n");
                         break;
                     }
                     else {
                         printf("--- Press any key to continue ---\n");
                         getchar();
+                        write(server_socket, user_input, sizeof(user_input));
                     }
                 }
 
@@ -175,13 +176,14 @@ int main(int argc, char *argv[]){
 }
 
 // prints 40 lines from server. Returns 1 if file ends. Returns 0 if not.
-int print_forty(int server_socket, char *server_reply){
+int print_forty(int server_socket){
+    char line[BUFF_SIZE];
     for(int i = 0; i < 40; i++){
-        read(server_socket, server_reply, sizeof(server_reply));
-        if(strcmp(server_reply, "-1-1") == 0){
+        read(server_socket, line, sizeof(line));
+        if(strcmp(line, "-1-1") == 0){
             return 1;
         }
-        fputs(server_reply, stdout);
+        fputs(line, stdout);
     }
     return 0;
 }

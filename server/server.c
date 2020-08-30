@@ -163,13 +163,17 @@ int main() {
                     printf("ERROR: Failed to open file.\n");
                     return 0;
                 }
-
                 char *end = "-1-1";
-                char line[256];
-                while(fgets(line, sizeof(line), fp) != NULL){
-                    write(client_socket, line, sizeof(line));
+                while(1){
+                    if(give_forty(client_socket, fp) == 1){
+                        write(client_socket, end, sizeof(end));
+                        printf("\n");
+                        break;
+                    }
+                    // just wait till client sends something. (asking for another 40 lines)
+                    read(client_socket, client_request, sizeof(client_request));
                 }
-                write(client_socket, end, sizeof(end));
+
                 fclose(fp);
                 free(file_name);
             } else {
@@ -186,7 +190,6 @@ int main() {
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1){
-    printf("1: %s\n2: %s\n", arg0, arg1);
     //arg0[strlen(arg0) - 1] = '\0'; //getting ride of the '\n' for the file name
     char path[BUFF_SIZE] = "/";
     strcat(path, arg0);
@@ -200,4 +203,18 @@ void make_file_path(char *file_name, char *arg0, char *arg1){
         exit(1);
     }
     file_name[strlen(file_name) - 1] = '\0';
+}
+
+// prints 40 lines of file. returns 1 if EOF. otherwise 0
+int give_forty(int client_socket, FILE* fp){
+    char line[BUFF_SIZE];
+    for(int i = 0; i < 40; i++){
+        if(fgets(line, sizeof(line), fp) != NULL){
+            printf("%s", line);
+            write(client_socket, line, sizeof(line));
+        } else {
+            return 1;
+        }
+    }
+    return 0;
 }
