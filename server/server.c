@@ -10,27 +10,31 @@ int main() {
     client_request = (char*)malloc(BUFF_SIZE * sizeof(char));
     server_reply = (char*)malloc(BUFF_SIZE * sizeof(char));
 
+    if(client_request == NULL || server_reply == NULL){
+        perror("Error allocating memory");
+        exit(EXIT_FAILURE);
+    }
+
 
     int num_strings = 10;
     char **args = NULL;
     args = malloc(num_strings * (sizeof(char *)));
     if(args == NULL){
-        printf("ERROR: Failed to allocate memory.\n");
-        exit(1);
+        perror("Error allocating memory");
+        exit(EXIT_FAILURE);
     }
     for (int i=0; i<num_strings; i++) {
         args[i] = malloc(sizeof(char) * BUFF_SIZE);
         if(args[i] == NULL){
-            printf("ERROR: Failed to allocate memory.\n");
-            exit(1);
+            perror("Error allocating memory");
+            exit(EXIT_FAILURE);
         }
     }
 
     if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0){
-        perror("ERROR: Failed to create socket");
+        perror("Error creating socket");
         exit(EXIT_FAILURE);
     }
-
     printf("--- Socket created ---\n");
 
     server.sin_family = AF_INET;
@@ -38,20 +42,20 @@ int main() {
     server.sin_port = htons(PORT_NUM);
 
     if(bind(server_socket, (struct sockaddr *) &server, sizeof(server)) < 0){
-        perror("ERROR: Failed to bind");
+        perror("Error binding socket");
         exit(EXIT_FAILURE);
     }
     printf("--- Bind successful ---\n");
 
     // BACKLOG is the maximum number of clients allowed.
     if(listen(server_socket, BACKLOG) < 0){
-        perror("ERROR: Could not listen");
+        perror("Error listening to socket");
         exit(EXIT_FAILURE);
     }
     printf("--- Listening ---\n");
 
     if((client_socket = accept(server_socket, (struct sockaddr *) &client, (socklen_t *) &address_len)) < 0){
-        perror("ERROR: Could not accept");
+        perror("Error accepting client");
         exit(EXIT_FAILURE);
     }
     printf("--- Client connected ---\n");
@@ -61,11 +65,6 @@ int main() {
         memset(client_request, '\0', strlen(client_request));
         memset(server_reply, '\0', strlen(server_reply));
         memset(args, '\0', (num_strings*BUFF_SIZE) * (sizeof *args));
-
-        if(client_request == NULL || server_reply == NULL || args == NULL){
-            printf("ERROR: Could not allocate memory.\n");
-            exit(1);
-        }
 
         // get whole line of client request.
         read(client_socket, client_request, BUFF_SIZE);
@@ -111,16 +110,16 @@ int main() {
                 FILE *fp = NULL;
                 char *file_name = malloc(BUFF_SIZE * sizeof(char));
                 if(file_name == NULL){
-                    printf("ERROR: Failed to allocated memory\n");
-                    exit(1);
+                    perror("Error allocating memory");
+                    exit(EXIT_FAILURE);
                 }
 
                 // makes 'file_name' = [current directory]/[dir]/[file]
                 make_file_path(file_name, args[0], args[1]);
                 fp = fopen(file_name, "w");
                 if(fp == NULL){
-                    printf("ERROR: Failed to open file.\n");
-                    exit(1);
+                    perror("Error opening file");
+                    exit(EXIT_FAILURE);
                 }
                 printf("--- File opened ---\n");
 
@@ -139,7 +138,7 @@ int main() {
                 fclose(fp);
 
             } else {
-                printf("ERROR: Directory already exists. Use -f flag to replace directory.\n");
+                printf("Error directory already exists. Use -f flag to replace directory.\n");
                 write(client_socket, "1", sizeof(char));
 
             }
@@ -151,8 +150,8 @@ int main() {
                 write(client_socket, "0", sizeof(char)); // tell the client we found dir
                 char *file_name = malloc(BUFF_SIZE * sizeof(char));
                 if(file_name == NULL){
-                    printf("ERROR: Failed to allocate memory.\n");
-                    exit(1);
+                    perror("Error allocating memory");
+                    exit(EXIT_FAILURE);
                 }
                 make_file_path(file_name, args[0], args[1]); //format file name correctly
 
@@ -160,10 +159,11 @@ int main() {
                 FILE *fp = NULL;
                 fp = fopen(file_name, "r");
                 if(fp == NULL){
-                    printf("ERROR: Failed to open file.\n");
-                    return 0;
+                    perror("Error opening file");
+                    exit(EXIT_FAILURE);
                 }
                 char *end = "-1-1";
+                printf("--- Sending file ---\n");
                 while(1){
                     if(give_forty(client_socket, fp) == 1){
                         write(client_socket, end, sizeof(end));
@@ -178,12 +178,12 @@ int main() {
                 free(file_name);
             } else {
                 write(client_socket, "1", sizeof(char));
-                printf("ERROR: Directory does not exists.\n");
+                perror("Error opening directory");
             }
         }
         else{
-            printf("ERROR: Server does not recognize client command.\n");
-            exit(1);
+            perror("Error, client command not defined.");
+            exit(EXIT_FAILURE);
         }
     }
 }
@@ -199,8 +199,8 @@ void make_file_path(char *file_name, char *arg0, char *arg1){
     if(getcwd(file_name, BUFF_SIZE) != NULL){
         strcat(file_name, path); // cwd is now "[current_directory]/[dir]/[file]"
     } else {
-        printf("ERROR: Could not get current working directory.\n");
-        exit(1);
+        perror("Error getting current working directory");
+        exit(EXIT_FAILURE);
     }
     file_name[strlen(file_name) - 1] = '\0';
 }
@@ -210,7 +210,6 @@ int give_forty(int client_socket, FILE* fp){
     char line[BUFF_SIZE];
     for(int i = 0; i < 40; i++){
         if(fgets(line, sizeof(line), fp) != NULL){
-            printf("%s", line);
             write(client_socket, line, sizeof(line));
         } else {
             return 1;

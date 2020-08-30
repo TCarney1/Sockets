@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/sysctl.h>
+#include <errno.h>
 
 
 int print_forty(int server_socket);

@@ -7,8 +7,8 @@ int main(int argc, char *argv[]){
 
     // check if the user entered the IP address of the server.
     if(argc < 2){
-        printf("ERROR: Too few arguments entered. IP address needed.\n");
-        exit(1);
+        perror("Error too few arguments entered");
+        exit(EXIT_FAILURE);
     }
 
     int server_socket;
@@ -17,26 +17,36 @@ int main(int argc, char *argv[]){
     user_input = (char*)malloc(BUFF_SIZE * sizeof(char));
     server_reply = (char*)malloc(BUFF_SIZE * sizeof(char));
 
+    if(user_input == NULL){
+        perror("Error allocating memory");
+        exit(EXIT_FAILURE);
+    }
+
+    if(server_reply == NULL){
+        perror("Error allocating memory");
+        exit(EXIT_FAILURE);
+    }
+
     int num_strings = 10;
     char **args = NULL;
     args = malloc(num_strings * (sizeof(char *)));
     if(args == NULL){
-        printf("ERROR: Failed to allocate memory.\n");
-        exit(1);
+        perror("Error allocating memory");
+        exit(EXIT_FAILURE);
     }
 
     for (int i=0; i<num_strings; i++){
         args[i] = malloc(sizeof(char) * BUFF_SIZE);
         if(args[i] == NULL){
-            printf("ERROR: Failed to allocate memory.\n");
-            exit(1);
+            perror("Error allocating memory");
+            exit(EXIT_FAILURE);
         }
     }
 
     // create the socket
     if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        printf("ERROR: Failed to create socket\n");
-        exit(1);
+        perror("Error creating socket");
+        exit(EXIT_FAILURE);
     }
     printf("--- Socket created ---\n");
 
@@ -45,8 +55,8 @@ int main(int argc, char *argv[]){
     server_address.sin_addr.s_addr = inet_addr("192.168.0.34");
 
     if(connect(server_socket, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
-        printf("ERROR: Failed to connected.\n");
-        exit(1);
+        perror("Error connecting");
+        exit(EXIT_FAILURE);
     }
     printf("--- Connected to server ---\n");
 
@@ -57,8 +67,8 @@ int main(int argc, char *argv[]){
         memset(args, '\0', (num_strings*BUFF_SIZE) * (sizeof *args));
 
         if(user_input == NULL || server_reply == NULL || args == NULL){
-            printf("ERROR: Could not allocate memory.\n");
-            exit(1);
+            perror("Error allocating memory");
+            exit(EXIT_FAILURE);
         }
 
 
@@ -110,8 +120,8 @@ int main(int argc, char *argv[]){
                 FILE *fp = NULL;
                 fp = fopen(args[1], "r");
                 if (fp == NULL) {
-                    printf("ERROR: Failed to open file\n");
-                    exit(1);
+                    perror("Error opening file");
+                    exit(EXIT_FAILURE);
                 }
                 char *end = "-1-1";
                 char line[256];
@@ -123,7 +133,7 @@ int main(int argc, char *argv[]){
 
             }
             else {
-                printf("ERROR: Directory already exists.\n");
+                perror("Error directory already exists");
             }
             // stop timing
             clock_t end = clock();
@@ -165,7 +175,7 @@ int main(int argc, char *argv[]){
                 printf("Time Taken: %lf seconds\n", time_spent);
 
             } else {
-                printf("ERROR: Directory does not exists.\n");
+                perror("Error directory does not exist");
             }
         }
         else if(strcmp(user_input_split, "sys") == 0){
@@ -179,14 +189,16 @@ int main(int argc, char *argv[]){
                 printf("--- System: Unknown ---\n");
             }
 
-            char cpu_info[100];
-            size_t size = 100;
-            sysctlbyname("machdep.cpu.brand_string", &cpu_info, &size, NULL, 0);
-
+            char cpu_info[BUFF_SIZE];
+            size_t size = BUFF_SIZE;
+            if(sysctlbyname("machdep.cpu.brand_string", &cpu_info, &size, NULL, 0) < 0){
+                perror("Error gathering CPU information");
+                exit(EXIT_FAILURE);
+            }
             printf("--- CPU: %s ---\n", cpu_info);
         }
         else{
-            printf("ERROR: %s is not defined.\n", user_input_split);
+            printf("Error: %s is not defined.\n", user_input_split);
         }
     }
 }

@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <errno.h>
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1);
