@@ -94,6 +94,7 @@ int main() {
             args[arg_count] = token;
             arg_count++;
         }
+        int last_index = arg_count - 2;
 
         // puts client's file on server
         if(strcmp(client_request, "put") == 0) {
@@ -156,7 +157,6 @@ int main() {
                     exit(EXIT_FAILURE);
                 }
                 make_file_path(file_name, args[0], args[1]); //format file name correctly
-
                 // file stuff
                 FILE *fp = NULL;
                 fp = fopen(file_name, "r");
@@ -185,7 +185,7 @@ int main() {
         }
         // puts client's file on server
         else if(strcmp(client_request, "run") == 0) {
-            int last_index = arg_count - 2;
+
             printf("--- Run request ---\n");
             //removing excess '\n' from single argument cases.
             if(last_index < 1){
@@ -194,10 +194,34 @@ int main() {
 
             // check if directory exists.
             if(stat(args[0], &st) >= 0){
-                //exists
+                char *file_name = malloc(BUFF_SIZE * sizeof(char));
+                char *exe_path = malloc(BUFF_SIZE * sizeof(char));
+                if(file_name == NULL){
+                    perror("Error allocating memory");
+                    exit(EXIT_FAILURE);
+                }
+                //check if file has been compiled
+                ensure_compiled(file_name, args[0], args[1], st);
+                strcat(exe_path, "./");
+                strcat(exe_path, args[0]);
+                strcat(exe_path, "/out");
+                //execl(exe_path, NULL);
+                char *a[]={"./out",NULL};
+                execvp(a[0],a);
+                // if no executable is in file, make one.
+                // if executable is older than last edit on file compile it.
+                // run executable with all command line args.
+                // give program output to client.
+                free(file_name);
+                free(exe_path);
+
             } else {
                 perror("Error opening program file");
             }
+        }
+        else if(strcmp(client_request, "list") == 0){
+            bool l_flag = strcmp(args[last_index - 1], "-l") == 0;
+            // need to finish this
         }
         else{
             perror("Error, client command not defined.");
@@ -208,18 +232,11 @@ int main() {
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1){
-    //arg0[strlen(arg0) - 1] = '\0'; //getting ride of the '\n' for the file name
-    char path[BUFF_SIZE] = "/";
-    strcat(path, arg0);
-    strcat(path, "/");
-    strcat(path, arg1); // path is now "/[dir]/[file]"
 
-    if(getcwd(file_name, BUFF_SIZE) != NULL){
-        strcat(file_name, path); // cwd is now "[current_directory]/[dir]/[file]"
-    } else {
-        perror("Error getting current working directory");
-        exit(EXIT_FAILURE);
-    }
+    strcat(file_name, arg0);
+    strcat(file_name, "/");
+    strcat(file_name, arg1); // path is now "[dir]/[file]"
+
     file_name[strlen(file_name) - 1] = '\0';
 }
 
@@ -234,4 +251,31 @@ int give_forty(int client_socket, FILE* fp){
         }
     }
     return 0;
+}
+
+void ensure_compiled(char *file_name, char *arg0, char *arg1, struct stat st){
+    char * comp_check = strdup(arg0);
+    strcat(comp_check, "/out");
+    if(stat(comp_check, &st) == -1){
+        // making file_name = "cc [dir]/[file].c -o [dir]/out]
+        // essentially compiling the file inside the dir, and putting the exe in the dir.
+        strcat(file_name, "cc ");
+        make_file_path(file_name, arg0, arg1);
+        strcat(file_name, " -o ");
+        strcat(file_name, arg0);
+        strcat(file_name, "/");
+        strcat(file_name, "out");
+
+
+        FILE* fp = popen(file_name, "w");
+        if(fp == NULL){
+            perror("Error opening file");
+            exit(EXIT_FAILURE);
+        }
+        fclose(fp);
+    }
+    else {
+        perror("Error executable exists\n");
+        exit(EXIT_FAILURE);
+    }
 }

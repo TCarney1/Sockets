@@ -103,6 +103,7 @@ int main(int argc, char *argv[]){
             args[arg_count] = token;
             arg_count++;
         }
+        int last_index = arg_count - 2;
 
         // puts file on server. file [dir] [file]
         if(strcmp(user_input_split, "put") == 0){
@@ -199,7 +200,6 @@ int main(int argc, char *argv[]){
         }
         // compiles and runs files on the server. run [dir][*optional* args][*optional*-f localfile]
         else if(strcmp(user_input_split, "run") == 0){
-            int last_index = arg_count - 2;
             bool loc_file, f_flag = false;
 
             // check if last argument is a file name (for optional localfile arg)
@@ -220,10 +220,21 @@ int main(int argc, char *argv[]){
                 // request get from server
                 write(server_socket, user_input, BUFF_SIZE);
                 printf("Sent: %s\n", user_input);
+                // server will reply with program output (or program error).
+                // if loc_file == true print to localfile, else print to stdout.
             } else {
                 // if file exists and we dont have -f flag.
                 printf("Error, directory already exists. No -f flag present.\n");
             }
+        }
+        else if(strcmp(user_input_split, "list") == 0){
+            if(last_index < 1){
+                perror("Error too few arguments entered for list");
+                exit(1);
+            }
+            write(server_socket, user_input, BUFF_SIZE);
+            read(server_socket, server_reply, BUFF_SIZE);
+            printf("%s", server_reply);
         }
         else{
             printf("Error: %s is not defined.\n", user_input_split);
