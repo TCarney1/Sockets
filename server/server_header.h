@@ -8,7 +8,9 @@
 
 
 #define PORT_NUM 80
-#define BUFF_SIZE 100
+#define BUFF_SIZE 1024
+#define BACKLOG 10
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +24,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <stdbool.h>
+#include <signal.h>
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1);
