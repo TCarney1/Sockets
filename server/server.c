@@ -9,6 +9,8 @@ int main() {
     pid_t cpid;
     int num_args = 10;
 
+    signal(SIGCHLD, kill_zombie);
+
     if(client_request == NULL || server_reply == NULL){
         perror("Error allocating memory");
         exit(EXIT_FAILURE);
@@ -32,7 +34,7 @@ int main() {
     }
     printf("--- Bind successful ---\n");
 
-    // BACKLOG is the maximum number of clients allowed.
+    // BACKLOG is the maximum number of outstanding requests
     // listening for clients to connect.
     if(listen(server_socket, BACKLOG) < 0){
         perror("Error listening to socket");
@@ -96,12 +98,11 @@ int main() {
                     free(client_request);
                     free(server_reply);
                     close(client_socket);
-                    //close(server_socket);
                     for(int i = 0; i < num_args; i++){
                         free(args[i]);
                     }
                     free(args);
-                    return 0;
+                    exit(EXIT_SUCCESS);
                 }
 
                 // still breaking input string into sections
@@ -297,4 +298,15 @@ void ensure_compiled(char *file_name, char *arg0, char *arg1, struct stat st){
         perror("Error executable exists\n");
         exit(EXIT_FAILURE);
     }
+}
+
+void kill_zombie(int sig){
+    int status;
+    printf("--- looking for zombie processes ---\n");
+    if(waitpid(-1, &status, WNOHANG) < 0){
+        printf("--- zombie process found and removed ---\n");
+    } else {
+        printf("--- no zombie processes found ---\n");
+    }
+
 }

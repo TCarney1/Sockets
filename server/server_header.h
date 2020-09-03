@@ -30,6 +30,7 @@
 void make_file_path(char *file_name, char *arg0, char *arg1);
 int give_forty(int client_socket, FILE* fp);
 void ensure_compiled(char *file_name, char *arg0, char *arg1, struct stat st);
+void kill_zombie(int sig);
 
 
 
