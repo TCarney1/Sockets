@@ -213,7 +213,6 @@ int main() {
                         free(file_name);
                     } else {
                         write(client_socket, "1", sizeof(char));
-                        perror("Error opening directory");
                     }
                 }
                 // puts client's file on server
@@ -273,6 +272,8 @@ int main() {
                     // need to finish this
                 }
                 else{
+                    // big issues if we get here... client shouldn't send anything
+                    // that the server wont understand.
                     perror("Error, client command not defined.");
                     exit(EXIT_FAILURE);
                 }

@@ -107,75 +107,82 @@ int main(int argc, char *argv[]){
 
         // puts file on server. file [dir] [file]
         if(strcmp(user_input_split, "put") == 0){
-            //start timing
-            clock_t begin = clock();
-
-            // put request from server
-            write(server_socket, user_input, BUFF_SIZE);
-            printf("Sent: %s\n", user_input);
-            // server replies 0 if directory created, 1 if directory already exists (and no flag).
-            read(server_socket, server_reply, sizeof(server_reply));
-            bool overwrite = (strcmp(args[last_index], "-f")) == 0;
-            if(strcmp(server_reply, "0") == 0 || overwrite == true){
-                FILE *fp = NULL;
-                fp = fopen(args[1], "r");
-                if (fp == NULL) {
-                    perror("Error opening file");
-                    exit(EXIT_FAILURE);
-                }
-                char *end = "-1-1";
-                char line[256];
-                while(fgets(line, sizeof(line), fp) != NULL){
-                    write(server_socket, line, sizeof(line));
-                }
-                write(server_socket, end, sizeof(end));
-                fclose(fp);
-
-            }
-            else {
-                perror("Error directory already exists");
-            }
-            // stop timing
-            clock_t end = clock();
-            double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-
-            // display result and time taken
-            printf("Time Taken: %lf seconds\n", time_spent);
-        }
-        // reads file from server get [dir] [file]
-        else if(strcmp(user_input_split, "get") == 0){
-            // request get from server
-            write(server_socket, user_input, BUFF_SIZE);
-            printf("Sent: %s\n", user_input);
-            // server replies 0 if directory exists, 1 if directory doesn't exists.
-            read(server_socket, server_reply, sizeof(server_reply));
-
-            if(strcmp(server_reply, "0") == 0){
+            // if put is called with less than 2 args its not valid.
+            if(last_index < 1){
+                printf("Error: too few arguments entered for put\n");
+            } else {
                 //start timing
                 clock_t begin = clock();
 
-                // start reading from the server.
-                while(1){
-                    memset(server_reply, '\0', strlen(server_reply));
-                    if(print_forty(server_socket) == 1){
-                        printf("\n--- End of file ---\n");
-                        break;
+                // put request from server
+                write(server_socket, user_input, BUFF_SIZE);
+                printf("Sent: %s\n", user_input);
+                // server replies 0 if directory created, 1 if directory already exists (and no flag).
+                read(server_socket, server_reply, sizeof(server_reply));
+                bool overwrite = (strcmp(args[last_index], "-f")) == 0;
+                if (strcmp(server_reply, "0") == 0 || overwrite == true) {
+                    FILE *fp = NULL;
+                    fp = fopen(args[1], "r");
+                    if (fp == NULL) {
+                        perror("Error opening file");
+                        exit(EXIT_FAILURE);
                     }
-                    else {
-                        printf("--- Press any key to continue ---\n");
-                        getchar();
-                        write(server_socket, user_input, sizeof(user_input));
+                    char *end = "-1-1";
+                    char line[256];
+                    while (fgets(line, sizeof(line), fp) != NULL) {
+                        write(server_socket, line, sizeof(line));
                     }
+                    write(server_socket, end, sizeof(end));
+                    fclose(fp);
+                } else {
+                    perror("Error directory already exists");
                 }
-
+                // stop timing
                 clock_t end = clock();
-                double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+                double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
 
                 // display result and time taken
                 printf("Time Taken: %lf seconds\n", time_spent);
+            }
+        }
+        // reads file from server get [dir] [file]
+        else if(strcmp(user_input_split, "get") == 0){
+            if(last_index < 1){
+                printf("Error: too few arguments entered for get\n");
 
-            } else {
-                perror("Error directory does not exist");
+            }else {
+                // request get from server
+                write(server_socket, user_input, BUFF_SIZE);
+                printf("Sent: %s\n", user_input);
+                // server replies 0 if directory exists, 1 if directory doesn't exists.
+                read(server_socket, server_reply, sizeof(server_reply));
+
+                if (strcmp(server_reply, "0") == 0) {
+                    //start timing
+                    clock_t begin = clock();
+
+                    // start reading from the server.
+                    while (1) {
+                        memset(server_reply, '\0', strlen(server_reply));
+                        if (print_forty(server_socket) == 1) {
+                            printf("\n--- End of file ---\n");
+                            break;
+                        } else {
+                            printf("--- Press any key to continue ---\n");
+                            getchar();
+                            write(server_socket, user_input, sizeof(user_input));
+                        }
+                    }
+
+                    clock_t end = clock();
+                    double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
+
+                    // display result and time taken
+                    printf("Time Taken: %lf seconds\n", time_spent);
+
+                } else {
+                    perror("Error no directory found");
+                }
             }
         }
         // prints the clients OS and CPU information
@@ -200,49 +207,55 @@ int main(int argc, char *argv[]){
         }
         // compiles and runs files on the server. run [dir][*optional* args][*optional*-f localfile]
         else if(strcmp(user_input_split, "run") == 0){
-            bool loc_file, f_flag = false;
+            if(last_index < 0){
+                printf("Error: too few arguments entered for run\n");
 
-            // check if last argument is a file name (for optional localfile arg)
-            loc_file = (strchr(args[last_index], '.')) != NULL;
-            if(loc_file == true){
+            }else {
+                bool loc_file, f_flag = false;
 
-                if(last_index < 1){
-                    perror("Error performing 'run', too few arguments");
-                    exit(1);
+                // check if last argument is a file name (for optional localfile arg)
+                loc_file = (strchr(args[last_index], '.')) != NULL;
+                if (loc_file == true) {
+
+                    if (last_index < 1) {
+                        perror("Error performing 'run', too few arguments");
+                        exit(1);
+                    }
+                    // check for -f flag (-f flag wont exists if localfile doesnt.)
+                    f_flag = strcmp(args[last_index - 1], "-f") == 0;
                 }
-                // check for -f flag (-f flag wont exists if localfile doesnt.)
-                f_flag = strcmp(args[last_index - 1], "-f") == 0;
-            }
 
-            // if localfile doesn't exist or we have -f
-            if(access(args[last_index], F_OK) == -1 || f_flag == true) {
-                clock_t begin = clock();
-                // if file doesn't exists OR we have -f flag
-                // request get from server
-                write(server_socket, user_input, BUFF_SIZE);
-                printf("Sent: %s\n", user_input);
-                // server will reply with program output (or program error).
-                // if loc_file == true print to localfile, else print to stdout.
-                clock_t end = clock();
-                double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+                // if localfile doesn't exist or we have -f
+                if (access(args[last_index], F_OK) == -1 || f_flag == true) {
+                    clock_t begin = clock();
+                    // if file doesn't exists OR we have -f flag
+                    // request get from server
+                    write(server_socket, user_input, BUFF_SIZE);
+                    printf("Sent: %s\n", user_input);
+                    // server will reply with program output (or program error).
+                    // if loc_file == true print to localfile, else print to stdout.
+                    clock_t end = clock();
+                    double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
 
-                // display result and time taken
-                printf("Time Taken: %lf seconds\n", time_spent);
+                    // display result and time taken
+                    printf("Time Taken: %lf seconds\n", time_spent);
 
-            } else {
-                // if file exists and we dont have -f flag.
-                printf("Error, directory already exists. No -f flag present.\n");
+                } else {
+                    // if file exists and we dont have -f flag.
+                    printf("Error, directory already exists. No -f flag present.\n");
+                }
             }
         }
         // lists contents of server
         else if(strcmp(user_input_split, "list") == 0){
             if(last_index < 1){
-                perror("Error too few arguments entered for list");
-                exit(1);
+                printf("Error: too few arguments entered for list\n");
+
+            }else {
+                write(server_socket, user_input, BUFF_SIZE);
+                read(server_socket, server_reply, BUFF_SIZE);
+                printf("%s", server_reply);
             }
-            write(server_socket, user_input, BUFF_SIZE);
-            read(server_socket, server_reply, BUFF_SIZE);
-            printf("%s", server_reply);
         }
         else{
             printf("Error: %s is not defined.\n", user_input_split);
