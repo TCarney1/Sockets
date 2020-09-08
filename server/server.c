@@ -111,13 +111,13 @@ int main() {
                     args[arg_count] = token;
                     arg_count++;
                 }
-                int last_index = arg_count - 2;
+                int last_index = arg_count - 1;
 
                 // puts client's file on server
                 if(strcmp(client_request, "put") == 0) {
                     printf("--- Put request ---\n");
 
-                    bool replace_dir = (strcmp(args[last_index], "-f\n")) == 0;
+                    bool replace_dir = (strcmp(args[last_index -1], "-f\n")) == 0;
                     // check if directory exists or -f flag
                     if(stat(args[0], &st) == -1 || replace_dir == true){
 
@@ -130,7 +130,6 @@ int main() {
                             strcat(rm, args[0]);
                             strcat(rm, "/*");
                             FILE* f = popen(rm, "r");
-                            //FILE* p = popen("y", "r");
                             printf("--- Dir replaced ---\n");
                             pclose(f);
                             //pclose(p);
@@ -220,39 +219,47 @@ int main() {
                 // puts client's file on server
                 else if(strcmp(client_request, "run") == 0) {
                     printf("--- Run request ---\n");
+
                     //removing excess '\n' from single argument cases.
-                    if(last_index < 1){
+                    if(last_index == 1){
                         args[0][strlen(args[0]) - 1] = '\0';
-                    }
 
-                    for(int i = 0; i < last_index; i++){
-                        printf("arg %d: %s\n", i, args[0]);
                     }
-
                     // check if directory exists.
                     if(stat(args[0], &st) >= 0){
                         char *exe_path = malloc(BUFF_SIZE * sizeof(char));
+                        memset(exe_path, '\0', strlen(exe_path));
                         char *file_buffer = malloc(BUFF_SIZE * sizeof(char));
                         //check if file has been compiled
-                        ensure_compiled(args[0], args[1], st);
+                        ensure_compiled(args[0], st);
                         strcat(exe_path, "./");
                         strcat(exe_path, args[0]);
-                        strcat(exe_path, "/out 2>&1");
+                        strcat(exe_path,"/");
+                        for(int i = 0; i < last_index; i++){
+                            strcat(exe_path, args[i]);
+                            strcat(exe_path, " ");
+                        }
+                        strcat(exe_path, "2>&1");
+
                         FILE *fp = popen(exe_path, "r");
                         if(fp == NULL){
                             perror("Error");
                             exit(EXIT_FAILURE);
                         }
 
-                        while(fgets(file_buffer, BUFF_SIZE, fp) != NULL){
-                            fputs(file_buffer, stdout);
+                        printf("--- Printing program output ---\n");
+
+                        while((fgets(file_buffer, BUFF_SIZE, fp)) != NULL){
+                            puts(file_buffer);
                         }
+
                         //execvp(a[0],a);
                         // if no executable is in file, make one.
                         // if executable is older than last edit on file compile it.
                         // run executable with all command line args.
                         // give program output to client.
                         free(exe_path);
+                        free(file_buffer);
                         pclose(fp);
 
                     } else {
@@ -296,14 +303,16 @@ int give_forty(int client_socket, FILE* fp){
     return 0;
 }
 
-void ensure_compiled(char *arg0, char *arg1, struct stat st){
+void ensure_compiled(char *arg0, struct stat st){
     char *file_name = malloc(BUFF_SIZE * sizeof(char));
+    memset(file_name, '\0', strlen(file_name));
     if(file_name == NULL){
         perror("Failed allocating memory for file name.");
         exit(EXIT_FAILURE);
     }
     char * comp_check = strdup(arg0);
-    strcat(comp_check, "/out");
+    strcat(comp_check, "/");
+    strcat(comp_check, arg0);
     if(stat(comp_check, &st) == -1){
         // making file_name = "cc [dir]/[file].c -o [dir]/out
         // essentially compiling the file inside the dir, and putting the exe in the dir.
@@ -313,16 +322,9 @@ void ensure_compiled(char *arg0, char *arg1, struct stat st){
         strcat(file_name, " -o ");
         strcat(file_name, arg0);
         strcat(file_name, "/");
-        strcat(file_name, "out");
+        strcat(file_name, arg0);
         popen(file_name, "r");
 
-
-        FILE* fp = popen(file_name, "w");
-        if(fp == NULL){
-            perror("Error opening file");
-            exit(EXIT_FAILURE);
-        }
-        fclose(fp);
         free(file_name);
     }
     else {
