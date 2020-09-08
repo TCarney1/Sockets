@@ -240,7 +240,7 @@ int main() {
                             strcat(exe_path, " ");
                         }
                         strcat(exe_path, "2>&1");
-
+                        wait(NULL);
                         FILE *fp = popen(exe_path, "r");
                         if(fp == NULL){
                             perror("Error");
@@ -323,6 +323,7 @@ void ensure_compiled(char *arg0, struct stat st){
         strcat(file_name, arg0);
         strcat(file_name, "/");
         strcat(file_name, arg0);
+        wait(NULL);
         popen(file_name, "r");
 
         free(file_name);
