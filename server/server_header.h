@@ -25,7 +25,7 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <signal.h>
-#include <sys/wait.h>
+
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1);
