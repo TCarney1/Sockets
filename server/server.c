@@ -253,6 +253,7 @@ int main() {
                             puts(file_buffer);
                         }
 
+
                         //execvp(a[0],a);
                         // if no executable is in file, make one.
                         // if executable is older than last edit on file compile it.
@@ -305,15 +306,41 @@ int give_forty(int client_socket, FILE* fp){
 
 void ensure_compiled(char *arg0, struct stat st){
     char *file_name = malloc(BUFF_SIZE * sizeof(char));
+    char *buff = malloc(BUFF_SIZE * sizeof(char));
     memset(file_name, '\0', strlen(file_name));
+
     if(file_name == NULL){
         perror("Failed allocating memory for file name.");
         exit(EXIT_FAILURE);
     }
+
+    // list by last edit to find if the executable is up to date.
+    strcat(file_name, "ls -t ");
+    strcat(file_name, arg0);
+    FILE * fp = NULL;
+
+    wait(NULL);
+    if((fp = popen(file_name, "r"))== NULL){
+        perror("Error");
+        exit(EXIT_FAILURE);
+    }
+
+    //grab top of list (newest file) to see if its the exe.
+    fgets(buff, BUFF_SIZE, fp);
+    //remove buffs trailing \n;
+    buff[strlen(buff) - 1] = '\0';
+
+    pclose(fp);
+    memset(file_name, '\0', strlen(file_name));
+
+    //make path for executable to check if it exists.
     char * comp_check = strdup(arg0);
     strcat(comp_check, "/");
     strcat(comp_check, arg0);
-    if(stat(comp_check, &st) == -1){
+
+    // if we have no exe OR the exe is older than a source file
+    if(stat(comp_check, &st) == -1 || strcmp(buff, arg0) != 0){
+        printf("--- compiling ---\n");
         // making file_name = "cc [dir]/[file].c -o [dir]/out
         // essentially compiling the file inside the dir, and putting the exe in the dir.
         strcat(file_name, "cc ");
@@ -325,12 +352,13 @@ void ensure_compiled(char *arg0, struct stat st){
         strcat(file_name, arg0);
         wait(NULL);
         popen(file_name, "r");
-
         free(file_name);
     }
     else {
-        printf("--- executable exists ---\n");
+        // we get here if the exe exists already and its younger than the source files.
+        printf("--- executable up to date ---\n");
     }
+    free(buff);
 }
 
 void kill_zombie(int sig){

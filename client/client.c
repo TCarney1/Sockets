@@ -214,14 +214,20 @@ int main(int argc, char *argv[]){
                 f_flag = strcmp(args[last_index - 1], "-f") == 0;
             }
 
-            // check if localfile already exists.
+            // if localfile doesn't exist or we have -f
             if(access(args[last_index], F_OK) == -1 || f_flag == true) {
+                clock_t begin = clock();
                 // if file doesn't exists OR we have -f flag
                 // request get from server
                 write(server_socket, user_input, BUFF_SIZE);
                 printf("Sent: %s\n", user_input);
                 // server will reply with program output (or program error).
                 // if loc_file == true print to localfile, else print to stdout.
+                clock_t end = clock();
+                double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+                // display result and time taken
+                printf("Time Taken: %lf seconds\n", time_spent);
 
             } else {
                 // if file exists and we dont have -f flag.
