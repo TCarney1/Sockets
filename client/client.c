@@ -113,10 +113,10 @@ int main(int argc, char *argv[]){
             // put request from server
             write(server_socket, user_input, BUFF_SIZE);
             printf("Sent: %s\n", user_input);
-            // server replies 0 if directory created, 1 if directory already exists.
+            // server replies 0 if directory created, 1 if directory already exists (and no flag).
             read(server_socket, server_reply, sizeof(server_reply));
-
-            if(strcmp(server_reply, "0") == 0){
+            bool overwrite = (strcmp(args[last_index], "-f")) == 0;
+            if(strcmp(server_reply, "0") == 0 || overwrite == true){
                 FILE *fp = NULL;
                 fp = fopen(args[1], "r");
                 if (fp == NULL) {
@@ -222,11 +222,13 @@ int main(int argc, char *argv[]){
                 printf("Sent: %s\n", user_input);
                 // server will reply with program output (or program error).
                 // if loc_file == true print to localfile, else print to stdout.
+
             } else {
                 // if file exists and we dont have -f flag.
                 printf("Error, directory already exists. No -f flag present.\n");
             }
         }
+        // lists contents of server
         else if(strcmp(user_input_split, "list") == 0){
             if(last_index < 1){
                 perror("Error too few arguments entered for list");
