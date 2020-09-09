@@ -157,16 +157,12 @@ int main() {
                         for(int i = 1; i < last_index; i++) {
                             memset(file_name, '\0', BUFF_SIZE);
                             memset(file_name, '\0', BUFF_SIZE);
-                            for(int i = 0; i < last_index; i++){
-                                printf("args %d: %s\n", i,args[i]);
-                            }
 
                             // makes 'file_name' = [current directory]/[dir]/[file]
                             strcat(file_name, dir);
                             strcat(file_name, "/");
                             strcat(file_name, args[i]);
 
-                            printf("filename %s %s %s\n",file_name, args[0], args[i]);
                             FILE *fp = fopen(file_name, "w");
                             if (fp == NULL) {
                                 perror("Error opening file");
