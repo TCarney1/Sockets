@@ -1,9 +1,7 @@
 #include "client_header.h"
 
+// argv[1] is ip address of server.
 int main(int argc, char *argv[]){
-    ////////
-    //TODO make ip address be entered from arguments.
-    ///////
 
     // check if the user entered the IP address of the server.
     if(argc < 2){
@@ -53,7 +51,7 @@ int main(int argc, char *argv[]){
 
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(PORT_NUM);
-    server_address.sin_addr.s_addr = inet_addr("192.168.0.34");
+    server_address.sin_addr.s_addr = inet_addr(argv[1]);
 
     if(connect(server_socket, (struct sockaddr *)&server_address, sizeof(server_address)) < 0){
         perror("Error connecting");
@@ -250,7 +248,6 @@ int main(int argc, char *argv[]){
                             if(strcmp(server_reply, "-1-1") == 0){
                                 break;
                             }
-                            //fputs(server_reply, fp);
                             fprintf(fp,"%s", server_reply);
                         }
                         fclose(fp);

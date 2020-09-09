@@ -59,9 +59,8 @@ int main() {
         }
         // if child
         else if (cpid == 0){
-            // memory alloc for to split user input into args.
+            // memory alloc to split user input into args.
             // just makes input more manageable
-
             char **args = NULL;
             args = malloc(num_args * (sizeof(char *)));
             if(args == NULL){
@@ -163,7 +162,6 @@ int main() {
                             }
 
                             // makes 'file_name' = [current directory]/[dir]/[file]
-                            //make_file_path(file_name, args[0], args[i]);
                             strcat(file_name, dir);
                             strcat(file_name, "/");
                             strcat(file_name, args[i]);
