@@ -122,21 +122,27 @@ int main(int argc, char *argv[]){
                 read(server_socket, server_reply, sizeof(server_reply));
                 bool overwrite = (strcmp(args[last_index], "-f")) == 0;
                 if (strcmp(server_reply, "0") == 0 || overwrite == true) {
-                    FILE *fp = NULL;
-                    fp = fopen(args[1], "r");
-                    if (fp == NULL) {
-                        perror("Error opening file");
-                        exit(EXIT_FAILURE);
+                    if(overwrite == false){
+                        last_index++;
                     }
-                    char *end = "-1-1";
-                    char line[256];
-                    while (fgets(line, sizeof(line), fp) != NULL) {
-                        write(server_socket, line, sizeof(line));
+                    for(int i = 1; i < last_index; i++){
+                        FILE *fp = NULL;
+                        fp = fopen(args[i], "r");
+                        if (fp == NULL) {
+                            perror("Error opening file");
+                            exit(EXIT_FAILURE);
+                        }
+                        char *end = "-1-1";
+                        char *buf = (char*)malloc(sizeof(char) *BUFF_SIZE);
+                        memset(buf, '\0', strlen(buf));
+                        while (fgets(buf, sizeof(buf), fp) != NULL) {
+                            write(server_socket, buf, sizeof(buf));
+                        }
+                        write(server_socket, end, sizeof(buf));
+                        fclose(fp);
                     }
-                    write(server_socket, end, sizeof(end));
-                    fclose(fp);
                 } else {
-                    perror("Error directory already exists");
+                    printf("Error directory already exists, use -f to replace\n");
                 }
                 // stop timing
                 clock_t end = clock();
@@ -271,16 +277,26 @@ int main(int argc, char *argv[]){
                 }
             }
         }
-        // lists contents of server
+        // lists contents of server. list [*optional* -l][*optional* dir]
         else if(strcmp(user_input_split, "list") == 0){
-            if(last_index < 1){
-                printf("Error: too few arguments entered for list\n");
-
-            }else {
-                write(server_socket, user_input, BUFF_SIZE);
+            //start timing
+            clock_t begin = clock();
+            write(server_socket, user_input, BUFF_SIZE);
+            while(1){
+                memset(server_reply, '\0', strlen(server_reply));
                 read(server_socket, server_reply, BUFF_SIZE);
+                if(strcmp(server_reply, "-1-1") == 0){
+                    break;
+                }
                 printf("%s", server_reply);
             }
+
+            // stop timing
+            clock_t end = clock();
+            double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
+
+            // display result and time taken
+            printf("Time Taken: %lf seconds\n", time_spent);
         }
         else{
             printf("Error: %s is not defined.\n", user_input_split);

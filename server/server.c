@@ -120,57 +120,73 @@ int main() {
                     bool replace_dir = (strcmp(args[last_index -1], "-f\n")) == 0;
                     // check if directory exists or -f flag
                     if(stat(args[0], &st) == -1 || replace_dir == true){
-
                         write(client_socket, "0", sizeof(char));
                         // -f flag means replace dir.
-                        if(replace_dir == true){
-                            strcat(args[1], "\n");
+                        if(stat(args[0], &st) != -1 && replace_dir == true){
                             char *rm = (char*)malloc(sizeof(char) * BUFF_SIZE);
+                            memset(rm, '\0', strlen(rm));
                             strcat(rm, "rm ");
                             strcat(rm, args[0]);
                             strcat(rm, "/*");
                             FILE* f = popen(rm, "r");
                             printf("--- Dir replaced ---\n");
                             pclose(f);
-                            //pclose(p);
+                            free(rm);
+                            // we dont want to make a file for the flag. so reduce index by 1.
+                            last_index--;
                         }else {
+                            //this if else is to handle if the user puts in an unnecessary -f.
+                            if(replace_dir == true){
+                                last_index--;
+                            } else {
+                                args[last_index-1][strlen(args[last_index-1]) - 1] = '\0';
+                            }
                             // make directory because it doesnt exist.
                             mkdir(args[0], 0777);
                             printf("--- Directory Created ---\n");
+                            // if we dont have a flag on the end, we need to remove the '\n' on the last arg
+
                         }
 
-
-
-                        // file handling and making of file path
-                        FILE *fp = NULL;
                         char *file_name = malloc(BUFF_SIZE * sizeof(char));
                         if(file_name == NULL){
                             perror("Error allocating memory");
                             exit(EXIT_FAILURE);
                         }
+                        char *dir = strdup(args[0]);
 
-                        // makes 'file_name' = [current directory]/[dir]/[file]
-                        make_file_path(file_name, args[0], args[1]);
-                        fp = fopen(file_name, "w");
-                        if(fp == NULL){
-                            perror("Error opening file");
-                            exit(EXIT_FAILURE);
-                        }
-                        printf("--- File opened ---\n");
-
-                        // file copying
-                        while(1){
-                            read(client_socket, client_request, sizeof(char) * 256);
-                            if(strcmp(client_request, "-1-1") == 0){
-                                break;
+                        for(int i = 1; i < last_index; i++) {
+                            memset(file_name, '\0', BUFF_SIZE);
+                            memset(file_name, '\0', BUFF_SIZE);
+                            for(int i = 0; i < last_index; i++){
+                                printf("args %d: %s\n", i,args[i]);
                             }
-                            fputs(client_request, fp);
 
+                            // makes 'file_name' = [current directory]/[dir]/[file]
+                            //make_file_path(file_name, args[0], args[i]);
+                            strcat(file_name, dir);
+                            strcat(file_name, "/");
+                            strcat(file_name, args[i]);
+
+                            printf("filename %s %s %s\n",file_name, args[0], args[i]);
+                            FILE *fp = fopen(file_name, "w");
+                            if (fp == NULL) {
+                                perror("Error opening file");
+                                exit(EXIT_FAILURE);
+                            }
+                            printf("--- File opened ---\n");
+                            // file copying
+                            while (1) {
+                                read(client_socket, client_request, sizeof(client_request));
+                                if (strcmp(client_request, "-1-1") == 0) {
+                                    break;
+                                }
+                                fputs(client_request, fp);
+                            }
+                            fclose(fp);
                         }
-                        printf("--- copy complete ---\n");
-
                         free(file_name);
-                        fclose(fp);
+                        printf("--- copy complete ---\n");
 
                     } else {
                         printf("Error directory already exists. Use -f flag to replace directory.\n");
@@ -241,8 +257,7 @@ int main() {
                             strcat(exe_path, args[i]);
                             strcat(exe_path, " ");
                         }
-                        //strcat(exe_path, "2>&1");
-                        wait(NULL);
+                        wait(NULL); // need to wait for the popen(compiling) before popen(running).
                         FILE *fp = popen(exe_path, "r");
                         if(fp == NULL){
                             perror("Error");
@@ -265,8 +280,43 @@ int main() {
                 }
                 // lists contents of server
                 else if(strcmp(client_request, "list") == 0){
-                    bool l_flag = strcmp(args[last_index - 1], "-l") == 0;
-                    // need to finish this
+                    // check for -l flag.
+                    printf("--- Getting list ---\n");
+
+                    char *command = (char*)malloc(sizeof(char) * BUFF_SIZE);
+                    char *end = "-1-1";
+                    memset(server_reply, '\0', strlen(server_reply));
+                    memset(command, '\0', strlen(command));
+                    if(command == NULL){
+                        perror("Failed allocating memory");
+                        exit(EXIT_FAILURE);
+                    }
+                    //if no args are given, we just want ls.
+                    strcat(command, "ls ");
+                    if(last_index > 0){
+                        // if args are given we want to ls [-f] [dir]
+                        for(int i = 0; i < last_index; i++){
+                            strcat(command, args[i]);
+                            strcat(command, " ");
+                        }
+                    }
+
+                    FILE* fp = popen(command, "r");
+                    if(fp == NULL){
+                        perror("Error");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    printf("--- Sending list ---\n");
+                    // send ls to client.
+                    while((fgets(server_reply, BUFF_SIZE, fp)) != NULL){
+                        write(client_socket, server_reply, BUFF_SIZE);
+                    }
+                    write(client_socket, end, BUFF_SIZE);
+                    printf("--- list sent ---\n");
+
+                    pclose(fp);
+                    free(command);
                 }
                 else{
                     // big issues if we get here... client shouldn't send anything
@@ -317,7 +367,6 @@ void ensure_compiled(char *arg0, struct stat st){
     strcat(file_name, arg0);
     FILE * fp = NULL;
 
-    wait(NULL);
     if((fp = popen(file_name, "r"))== NULL){
         perror("Error");
         exit(EXIT_FAILURE);
@@ -348,7 +397,6 @@ void ensure_compiled(char *arg0, struct stat st){
         strcat(file_name, arg0);
         strcat(file_name, "/");
         strcat(file_name, arg0);
-        wait(NULL);
         popen(file_name, "r");
         free(file_name);
     }
