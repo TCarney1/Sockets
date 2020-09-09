@@ -32,6 +32,7 @@
 #include <time.h>
 #include <sys/sysctl.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <stdbool.h>
 
 

@@ -13,6 +13,7 @@ int main(int argc, char *argv[]){
 
     int server_socket;
     struct sockaddr_in server_address;
+    struct stat st;
     char *user_input, *server_reply;
     user_input = (char*)malloc(BUFF_SIZE * sizeof(char));
     server_reply = (char*)malloc(BUFF_SIZE * sizeof(char));
@@ -234,6 +235,30 @@ int main(int argc, char *argv[]){
                     printf("Sent: %s\n", user_input);
                     // server will reply with program output (or program error).
                     // if loc_file == true print to localfile, else print to stdout.
+                    if(f_flag || loc_file){
+                        // if client wants output put into a file
+                        FILE *fp = fopen(args[last_index], "w");
+                        while(1){
+                            memset(server_reply, '\0', strlen(server_reply));
+                            read(server_socket, server_reply, BUFF_SIZE);
+                            if(strcmp(server_reply, "-1-1") == 0){
+                                break;
+                            }
+                            //fputs(server_reply, fp);
+                            fprintf(fp,"%s", server_reply);
+                        }
+                        fclose(fp);
+                    } else {
+                        // if client wants output printed.
+                        while(1){
+                            memset(server_reply, '\0', strlen(server_reply));
+                            read(server_socket, server_reply, BUFF_SIZE);
+                            if(strcmp(server_reply, "-1-1") == 0){
+                                break;
+                            }
+                            printf("%s",server_reply);
+                        }
+                    }
                     clock_t end = clock();
                     double time_spent = (double) (end - begin) / CLOCKS_PER_SEC;
 

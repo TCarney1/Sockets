@@ -208,6 +208,7 @@ int main() {
                             // just wait till client sends something. (asking for another 40 lines)
                             read(client_socket, client_request, sizeof(client_request));
                         }
+                        printf("--- File sent ---\n");
 
                         fclose(fp);
                         free(file_name);
@@ -226,19 +227,21 @@ int main() {
                     }
                     // check if directory exists.
                     if(stat(args[0], &st) >= 0){
+                        char *end = "-1-1";
                         char *exe_path = malloc(BUFF_SIZE * sizeof(char));
                         memset(exe_path, '\0', strlen(exe_path));
                         char *file_buffer = malloc(BUFF_SIZE * sizeof(char));
-                        //check if file has been compiled
-                        ensure_compiled(args[0], st);
+                        ensure_compiled(args[0], st);//check if file has been compiled
+                        //making exe_path = ./[dir]/[exe] [args1]...
                         strcat(exe_path, "./");
                         strcat(exe_path, args[0]);
                         strcat(exe_path,"/");
+                        // adding args.
                         for(int i = 0; i < last_index; i++){
                             strcat(exe_path, args[i]);
                             strcat(exe_path, " ");
                         }
-                        strcat(exe_path, "2>&1");
+                        //strcat(exe_path, "2>&1");
                         wait(NULL);
                         FILE *fp = popen(exe_path, "r");
                         if(fp == NULL){
@@ -246,18 +249,12 @@ int main() {
                             exit(EXIT_FAILURE);
                         }
 
-                        printf("--- Printing program output ---\n");
-
+                        // send program output to client.
                         while((fgets(file_buffer, BUFF_SIZE, fp)) != NULL){
-                            puts(file_buffer);
+                            write(client_socket, file_buffer, BUFF_SIZE);
                         }
+                        write(client_socket, end, BUFF_SIZE);
 
-
-                        //execvp(a[0],a);
-                        // if no executable is in file, make one.
-                        // if executable is older than last edit on file compile it.
-                        // run executable with all command line args.
-                        // give program output to client.
                         free(exe_path);
                         free(file_buffer);
                         pclose(fp);
