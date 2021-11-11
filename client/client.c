@@ -1,5 +1,5 @@
 #include "client_header.h"
-// git test:wq
+// sinead is a loser.
 // argv[1] is ip address of server.
 int main(int argc, char *argv[]){
 
