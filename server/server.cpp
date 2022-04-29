@@ -13,53 +13,53 @@ server::server(int server_socket_, int client_socket_){
 void server::set_up(){
     //signal(SIGCHLD, kill_zombie);
 
-
     // creating socket for server.
-    // if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0){
-    //     perror("Error creating socket");
-    //     exit(EXIT_FAILURE);
+    if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0){
+        perror("Error creating socket");
+        exit(EXIT_FAILURE);
+    }
 
     std::cout << "--- Socket created ---" << std::endl;
 
-    // server_address.sin_family = AF_INET;
-    // server_address.sin_addr.s_addr = INADDR_ANY;
-    // server_address.sin_port = htons(PORT_NUM);
+    server_address.sin_family = AF_INET;
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    server_address.sin_port = htons(PORT_NUM);
 
     // binding socket
-    // if(bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0){
-    //     perror("Error binding socket");
-    //     exit(EXIT_FAILURE);
-    // }
+    if(bind(server_socket, (struct sockaddr *) &server_address, sizeof(server_address)) < 0){
+        perror("Error binding socket");
+        exit(EXIT_FAILURE);
+    }
     std::cout << "--- Bind successful ---" << std::endl;
 
     // BACKLOG is the maximum number of outstanding requests
     // listening for clients to connect.
-    // if(listen(server_socket, BACKLOG) < 0){
-    //     perror("Error listening to socket");
-    //     exit(EXIT_FAILURE);
-    // }
+    if(listen(server_socket, BACKLOG) < 0){
+        perror("Error listening to socket");
+        exit(EXIT_FAILURE);
+    }
 }
 
 void server::run(){
-    std::cout << "--- Waiting for connection ---" << std::endl;
+    std::cout << "--- Waiting for connection ---" << std::endl;;
         // accept multiple clients
     while(1){
         std::string client_request;
         std::string server_reply;
 
-        // int address_len = sizeof(client_address);
-        // if((client_socket = accept(server_socket, (struct sockaddr *) &client_address, (socklen_t *) &address_len)) < 0){
-        //     perror("Error accepting client");
-        //     exit(EXIT_FAILURE);
-        // }
+        int address_len = sizeof(client_address);
+        if((client_socket = accept(server_socket, (struct sockaddr *) &client_address, (socklen_t *) &address_len)) < 0){
+            perror("Error accepting client");
+            exit(EXIT_FAILURE);
+        }
         std::cout << "--- Client connected ---" << std::endl;
         // creating child process
-        // if((cpid = fork()) < 0){
-        //     perror("Error forking.");
-        //     exit(1);
-        // }
+        if((cpid = fork()) < 0){
+            perror("Error forking.");
+            exit(1);
+        }
         // if child
-        // else if (cpid == 0){
+        else if (cpid == 0){
             // memory alloc to split user input into args.
             // just makes input more manageable
             std::vector<std::string> args;
@@ -98,7 +98,7 @@ void server::run(){
                     list();
                 }
             }
-        // }
+        }
     }
 }
 
