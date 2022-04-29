@@ -31,18 +31,18 @@ void server::set_up(){
         exit(EXIT_FAILURE);
     }
     std::cout << "--- Bind successful ---" << std::endl;
+}
 
+void server::run(){
     // BACKLOG is the maximum number of outstanding requests
     // listening for clients to connect.
     if(listen(server_socket, BACKLOG) < 0){
         perror("Error listening to socket");
         exit(EXIT_FAILURE);
     }
-}
 
-void server::run(){
     std::cout << "--- Waiting for connection ---" << std::endl;;
-        // accept multiple clients
+    // accept multiple clients
     while(1){
         std::string client_request;
         std::string server_reply;

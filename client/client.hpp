@@ -21,7 +21,7 @@
 #define PORT_NUM 80
 #define BUFF_SIZE 1024
 
-#include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -34,6 +34,30 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <vector>
+#include <string>
+
+struct client{
+private:
+    int server_socket;
+    struct sockaddr_in server_address;
+    struct stat st;
+    int num_args = 10;
+
+
+    void put();
+    void get();
+    void sys();
+    void run_command();
+    void list();
+
+public:
+    client();
+    client(int server_socket_);
+    void connect_to_server(const char* ip);
+    void run();
+};
+
 
 
 int print_forty(int server_socket);
