@@ -12,7 +12,7 @@
 #define BACKLOG 10
 
 
-#include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -27,6 +27,33 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <memory>
+#include <string>
+#include <vector>
+
+struct server {
+private:
+    int server_socket;
+    int client_socket;
+    int num_args = 10;
+    pid_t cpid;
+    struct sockaddr_in server_address;
+    struct sockaddr_in client_address;
+    char *client_request;
+    char *server_reply;
+
+    void list();
+    void run_command();
+    void get();
+    void put();
+
+public:
+    server();
+    server(int server_socket, int client_socket);
+    void set_up();
+    void run();
+
+} typedef server;
 
 
 void make_file_path(char *file_name, char *arg0, char *arg1);
